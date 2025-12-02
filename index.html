@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Login - EverNet</title>
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#001f3f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="EverNet Admin">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  
+  <!-- Fonts & Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
+  <!-- Supabase instead of Firebase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    :root {
+      --navy: #001f3f;
+      --dark-navy: #00152c;
+      --gold: #d4af37;
+      --light-gold: #e6d4a8;
+      --white: #ffffff;
+      --light: #f8fafc;
+      --success: #28a745;
+      --danger: #dc3545;
+      --creator: #8B5CF6;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Poppins", sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--dark-navy) 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .login-container {
+      background: var(--white);
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+      width: 100%;
+      max-width: 400px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .brand {
+      font-family: "Montserrat", sans-serif;
+      font-size: 2em;
+      font-weight: 900;
+      text-align: center;
+      margin-bottom: 30px;
+      background: linear-gradient(135deg, var(--navy) 0%, var(--creator) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: var(--navy);
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 1em;
+      transition: all 0.3s ease;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--creator);
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 12px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.4s ease;
+      cursor: pointer;
+      font-size: 1em;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn.main {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--dark-navy) 100%);
+      color: var(--white);
+      box-shadow: 0 8px 30px rgba(0, 31, 63, 0.2);
+    }
+
+    .btn.main:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 40px rgba(0, 31, 63, 0.3);
+    }
+
+    .notification {
+      padding: 15px;
+      border-radius: 10px;
+      color: white;
+      font-weight: 500;
+      margin-bottom: 20px;
+      text-align: center;
+      display: none;
+    }
+
+    .notification.error {
+      background: var(--danger);
+      display: block;
+    }
+
+    .notification.success {
+      background: var(--success);
+      display: block;
+    }
+
+    .admin-note {
+      text-align: center;
+      margin-top: 20px;
+      color: #64748b;
+      font-size: 0.9em;
+    }
+
+    /* Install Prompt */
+    .install-prompt {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--white);
+      padding: 15px 20px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      display: none;
+      align-items: center;
+      gap: 15px;
+      z-index: 1000;
+      max-width: 90%;
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+    }
+
+    .install-prompt button {
+      background: var(--creator);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    .install-prompt button:hover {
+      background: #7c3aed;
+    }
+
+    .install-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: var(--creator);
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 500;
+      z-index: 1000;
+      display: none;
+    }
+
+    /* Loading animation */
+    .loading-spinner {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid var(--creator);
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+      margin-right: 8px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Password Toggle */
+    .password-input {
+      position: relative;
+    }
+
+    .password-toggle {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: #64748b;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <!-- Install Button (shown when PWA can be installed) -->
+  <button id="installButton" class="install-btn">
+    <i class="fas fa-download"></i> Install App
+  </button>
+
+  <div class="login-container">
+    <div class="brand">EVERNET - ADMIN</div>
+    
+    <div id="notification" class="notification"></div>
+    
+    <div class="form-group">
+      <label class="form-label">Email Address</label>
+      <input type="email" class="form-input" id="email" placeholder="admin@evergreenempireltd.com">
+    </div>
+    
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <div class="password-input">
+        <input type="password" class="form-input" id="password" placeholder="Enter your password">
+        <button type="button" class="password-toggle" onclick="togglePasswordVisibility()">
+          <i class="fas fa-eye"></i>
+        </button>
+      </div>
+    </div>
+    
+    <button class="btn main" onclick="login()" id="loginBtn">
+      <i class="fas fa-sign-in-alt"></i> Login to Admin Portal
+    </button>
+    
+    <div class="admin-note">
+      Restricted access - Admin privileges required
+    </div>
+  </div>
+
+  <script>
+    // ========== SUPABASE CONFIGURATION ==========
+    const SUPABASE_URL = 'https://cxvlpsrhylgyafxeplsp.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4dmxwc3JoeWxneWFmeGVwbHNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ2MzA5MTMsImV4cCI6MjA4MDIwNjkxM30.ZEzQunLyHTutf26LYOgspoNoeN98QqwWgK1fIwjh_rs';
+    
+    // Initialize Supabase
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    console.log('Supabase initialized successfully');
+
+    // ========== PWA INSTALLATION ==========
+    let deferredPrompt;
+    const installButton = document.getElementById('installButton');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      console.log('beforeinstallprompt event fired');
+      
+      // Prevent the mini-infobar from appearing on mobile
+      e.preventDefault();
+      
+      // Stash the event so it can be triggered later
+      deferredPrompt = e;
+      
+      // Show the install button
+      installButton.style.display = 'block';
+      
+      // Optional: Show automatic prompt after 5 seconds
+      setTimeout(() => {
+        if (deferredPrompt) {
+          showInstallPrompt();
+        }
+      }, 5000);
+    });
+
+    function showInstallPrompt() {
+      if (deferredPrompt) {
+        // Show the install prompt
+        deferredPrompt.prompt();
+        
+        // Wait for the user to respond to the prompt
+        deferredPrompt.userChoice.then((choiceResult) => {
+          if (choiceResult.outcome === 'accepted') {
+            console.log('User accepted the install prompt');
+          } else {
+            console.log('User dismissed the install prompt');
+          }
+          
+          // Clear the saved prompt since it can't be used again
+          deferredPrompt = null;
+          
+          // Hide the install button
+          installButton.style.display = 'none';
+        });
+      }
+    }
+
+    installButton.addEventListener('click', showInstallPrompt);
+
+    // Check if app is already installed
+    window.addEventListener('appinstalled', (evt) => {
+      console.log('App was successfully installed');
+      installButton.style.display = 'none';
+      deferredPrompt = null;
+    });
+
+    // ========== SERVICE WORKER REGISTRATION ==========
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then((registration) => {
+            console.log('SW registered: ', registration);
+          })
+          .catch((registrationError) => {
+            console.log('SW registration failed: ', registrationError);
+          });
+      });
+    }
+
+    // ========== HELPER FUNCTIONS ==========
+    function showNotification(message, type = 'error') {
+      const notification = document.getElementById('notification');
+      notification.textContent = message;
+      notification.className = `notification ${type}`;
+      notification.style.display = 'block';
+      
+      // Auto-hide success messages after 3 seconds
+      if (type === 'success') {
+        setTimeout(() => {
+          notification.style.display = 'none';
+        }, 3000);
+      }
+    }
+
+    function togglePasswordVisibility() {
+      const passwordInput = document.getElementById('password');
+      const toggleIcon = document.querySelector('.password-toggle i');
+      
+      if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggleIcon.className = 'fas fa-eye-slash';
+      } else {
+        passwordInput.type = 'password';
+        toggleIcon.className = 'fas fa-eye';
+      }
+    }
+
+    function showLoading(button) {
+      const originalText = button.innerHTML;
+      button.innerHTML = `<div class="loading-spinner"></div> Logging in...`;
+      button.disabled = true;
+      return originalText;
+    }
+
+    function hideLoading(button, originalText) {
+      button.innerHTML = originalText;
+      button.disabled = false;
+    }
+
+    // ========== LOGIN FUNCTION ==========
+    async function login() {
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value.trim();
+      const loginBtn = document.getElementById('loginBtn');
+      
+      if (!email || !password) {
+        showNotification('Please enter both email and password');
+        return;
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        showNotification('Please enter a valid email address');
+        return;
+      }
+
+      const originalBtnText = showLoading(loginBtn);
+
+      try {
+        // Sign in with Supabase Auth
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+          email: email,
+          password: password
+        });
+
+        if (authError) {
+          throw authError;
+        }
+
+        const user = authData.user;
+        console.log('User authenticated:', user.email);
+
+        // Check if user has admin role in our database
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (userError) {
+          throw new Error('User not found in system');
+        }
+
+        if (userData && userData.role === 'admin') {
+          showNotification('Login successful! Redirecting...', 'success');
+          
+          // Store session data in localStorage for admin portal
+          localStorage.setItem('admin_session', JSON.stringify({
+            user_id: user.id,
+            email: user.email,
+            role: userData.role,
+            logged_in_at: new Date().toISOString()
+          }));
+          
+          setTimeout(() => {
+            window.location.href = 'admin-portal.html';
+          }, 1000);
+        } else {
+          showNotification('Access denied. Admin privileges required.');
+          // Sign out since user is not admin
+          await supabase.auth.signOut();
+          localStorage.removeItem('admin_session');
+        }
+
+      } catch (error) {
+        console.error('Login error:', error);
+        
+        // Handle specific error cases
+        if (error.message === 'Invalid login credentials' || error.message.includes('email') || error.message.includes('password')) {
+          showNotification('Invalid email or password');
+        } else if (error.message === 'User not found in system') {
+          showNotification('User not found in system');
+        } else if (error.message.includes('rate limit')) {
+          showNotification('Too many login attempts. Please try again later.');
+        } else {
+          showNotification('Login failed: ' + error.message);
+        }
+        
+        // Clear password field for security
+        document.getElementById('password').value = '';
+      } finally {
+        hideLoading(loginBtn, originalBtnText);
+      }
+    }
+
+    // ========== AUTO-LOGIN CHECK ==========
+    async function checkExistingSession() {
+      try {
+        // Check if we have a valid session
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('Session check error:', sessionError);
+          return;
+        }
+
+        if (sessionData.session) {
+          const user = sessionData.session.user;
+          
+          // Verify user is admin
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+          
+          if (!userError && userData && userData.role === 'admin') {
+            console.log('Auto-login detected for admin user:', user.email);
+            showNotification('Welcome back! Redirecting...', 'success');
+            
+            setTimeout(() => {
+              window.location.href = 'admin-portal.html';
+            }, 1000);
+          }
+        }
+      } catch (error) {
+        console.error('Auto-login check error:', error);
+      }
+    }
+
+    // ========== EVENT LISTENERS ==========
+    
+    // Allow login on Enter key
+    document.addEventListener('keypress', function(event) {
+      if (event.key === 'Enter') {
+        login();
+      }
+    });
+
+    // Toggle password visibility on icon click
+    document.querySelector('.password-toggle').addEventListener('click', togglePasswordVisibility);
+
+    // Auto-focus email field on page load
+    window.addEventListener('load', function() {
+      document.getElementById('email').focus();
+    });
+
+    // Check for existing session when page loads
+    window.addEventListener('DOMContentLoaded', checkExistingSession);
+
+    // ========== DEMO CREDENTIALS HELPER ==========
+    // Optional: Add demo credentials for testing (remove in production)
+    function fillDemoCredentials() {
+      // This is for development/testing only
+      const demoEmail = 'admin@example.com';
+      const demoPassword = 'admin123';
+      
+      document.getElementById('email').value = demoEmail;
+      document.getElementById('password').value = demoPassword;
+      
+      console.log('Demo credentials filled for testing');
+    }
+
+    // Uncomment the line below to enable demo credentials (for development only)
+    // window.addEventListener('load', fillDemoCredentials);
+
+    // ========== FORGOT PASSWORD FUNCTIONALITY ==========
+    async function requestPasswordReset() {
+      const email = document.getElementById('email').value.trim();
+      
+      if (!email) {
+        showNotification('Please enter your email address');
+        return;
+      }
+
+      try {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: window.location.origin + '/reset-password.html'
+        });
+
+        if (error) throw error;
+        
+        showNotification('Password reset email sent. Check your inbox.', 'success');
+      } catch (error) {
+        console.error('Password reset error:', error);
+        showNotification('Error sending reset email: ' + error.message);
+      }
+    }
+
+    // Add forgot password link to the form
+    window.addEventListener('load', function() {
+      const adminNote = document.querySelector('.admin-note');
+      const forgotPasswordLink = document.createElement('a');
+      forgotPasswordLink.href = '#';
+      forgotPasswordLink.textContent = 'Forgot Password?';
+      forgotPasswordLink.style.color = 'var(--creator)';
+      forgotPasswordLink.style.textDecoration = 'none';
+      forgotPasswordLink.style.marginLeft = '10px';
+      forgotPasswordLink.style.cursor = 'pointer';
+      forgotPasswordLink.onclick = function(e) {
+        e.preventDefault();
+        if (confirm('Send password reset email to ' + (document.getElementById('email').value || 'your email') + '?')) {
+          requestPasswordReset();
+        }
+      };
+      
+      adminNote.appendChild(document.createElement('br'));
+      adminNote.appendChild(forgotPasswordLink);
+    });
+  </script>
+</body>
+</html>
